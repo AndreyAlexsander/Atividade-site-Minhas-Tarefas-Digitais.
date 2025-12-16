@@ -90,12 +90,12 @@
 </head>
 <body>
 
-
+<!-- LOGIN -->
 <section id="login" class="auth">
   <div class="card-auth">
     <h4 class="text-center text-primary">Login</h4>
-    <input id="loginUser" class="form-control mb-2" placeholder="Usuário">
-    <input id="loginPass" type="password" class="form-control mb-3" placeholder="Senha">
+    <input id="loginUser" class="form-control mb-2" placeholder="Usuário" required>
+    <input id="loginPass" type="password" class="form-control mb-3" placeholder="Senha" required>
     <button class="btn btn-primary w-100" onclick="login()">Entrar</button>
     <p class="text-center mt-2">
       <a href="#" onclick="show('register')">Cadastrar</a>
@@ -103,15 +103,15 @@
   </div>
 </section>
 
-
+<!-- CADASTRO -->
 <section id="register" class="auth d-none">
   <div class="card-auth">
     <h4 class="text-center text-primary">Cadastro</h4>
-    <input id="regNome" class="form-control mb-2" placeholder="Nome completo">
-    <input id="regEmail" class="form-control mb-2" placeholder="E-mail">
-    <input id="regUser" class="form-control mb-2" placeholder="Usuário">
-    <input id="regPass" type="password" class="form-control mb-2" placeholder="Senha (mín. 8)">
-    <input id="regConf" type="password" class="form-control mb-3" placeholder="Confirmar senha">
+    <input id="regNome" class="form-control mb-2" placeholder="Nome completo" required>
+    <input id="regEmail" class="form-control mb-2" placeholder="E-mail" type="email" required>
+    <input id="regUser" class="form-control mb-2" placeholder="Usuário" required>
+    <input id="regPass" type="password" class="form-control mb-2" placeholder="Senha (mín. 8)" required>
+    <input id="regConf" type="password" class="form-control mb-3" placeholder="Confirmar senha" required>
     <button class="btn btn-primary w-100" onclick="register()">Cadastrar</button>
     <p class="text-center mt-2">
       <a href="#" onclick="show('login')">Voltar</a>
@@ -119,7 +119,7 @@
   </div>
 </section>
 
-
+<!-- HOME -->
 <section id="home" class="main d-none">
   <nav class="sidebar">
     <strong>Minhas Tarefas</strong>
@@ -141,7 +141,7 @@
         <h5>Nova Tarefa</h5>
       </div>
       <div class="modal-body">
-        <input id="tTitle" class="form-control mb-2" placeholder="Título">
+        <input id="tTitle" class="form-control mb-2" placeholder="Título" required>
         <textarea id="tDesc" class="form-control" placeholder="Descrição"></textarea>
       </div>
       <div class="modal-footer">
@@ -176,7 +176,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-  const USER = { u: 'admin', p: '123' };
   let tasks = [];
   let current = null;
 
@@ -189,7 +188,16 @@
   }
 
   function login() {
-    if (loginUser.value === USER.u && loginPass.value === USER.p) {
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    const loginUser = el('loginUser').value;
+    const loginPass = el('loginPass').value;
+    
+    if (loginUser === '' || loginPass === '') {
+      alert('Preencha todos os campos');
+      return;
+    }
+    
+    if (storedUser && storedUser.username === loginUser && storedUser.password === loginPass) {
       show('home');
     } else {
       alert('Usuário ou senha inválidos');
@@ -197,9 +205,45 @@
   }
 
   function register() {
-    if (regPass.value !== regConf.value) return alert('Senhas diferentes');
+    const regNome = el('regNome').value;
+    const regEmail = el('regEmail').value;
+    const regUser = el('regUser').value;
+    const regPass = el('regPass').value;
+    const regConf = el('regConf').value;
+    
+    if (regPass !== regConf) {
+      alert('Senhas diferentes');
+      return;
+    }
+    if (regNome.length < 3) {
+      alert('Nome inválido');
+      return;
+    }
+    if (!validateEmail(regEmail)) {
+      alert('E-mail inválido');
+      return;
+    }
+    if (regPass.length < 8) {
+      alert('A senha deve ter pelo menos 8 caracteres');
+      return;
+    }
+
+    // Salvar usuário no localStorage
+    const newUser = {
+      username: regUser,
+      password: regPass,
+      name: regNome,
+      email: regEmail
+    };
+    localStorage.setItem('user', JSON.stringify(newUser));
+
     alert('Cadastro realizado');
     show('login');
+  }
+
+  function validateEmail(email) {
+    const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return re.test(email);
   }
 
   function logout() {
@@ -207,18 +251,20 @@
   }
 
   function addTask() {
-    if (!tTitle.value) return alert('Título obrigatório');
+    const tTitle = el('tTitle').value;
+    const tDesc = el('tDesc').value;
+    if (!tTitle) return alert('Título obrigatório');
 
     tasks.push({
       id: Date.now(),
-      title: tTitle.value,
-      desc: tDesc.value,
+      title: tTitle,
+      desc: tDesc,
       done: false
     });
 
     render();
     clearAdd();
-    bootstrap.Modal.getInstance(modalAdd).hide();
+    bootstrap.Modal.getInstance(el('modalAdd')).hide();
   }
 
   function render() {
@@ -237,34 +283,35 @@
   function editTask(t) {
     if (t.done) return;
     current = t;
-    eTitle.value = t.title;
-    eDesc.value = t.desc;
-    new bootstrap.Modal(modalEdit).show();
+    el('eTitle').value = t.title;
+    el('eDesc').value = t.desc;
+    new bootstrap.Modal(el('modalEdit')).show();
   }
 
   function saveTask() {
-    current.title = eTitle.value;
-    current.desc = eDesc.value;
+    current.title = el('eTitle').value;
+    current.desc = el('eDesc').value;
     render();
-    bootstrap.Modal.getInstance(modalEdit).hide();
+    bootstrap.Modal.getInstance(el('modalEdit')).hide();
   }
 
   function removeTask() {
     tasks = tasks.filter(t => t !== current);
     render();
-    bootstrap.Modal.getInstance(modalEdit).hide();
+    bootstrap.Modal.getInstance(el('modalEdit')).hide();
   }
 
   function completeTask() {
     current.done = true;
     render();
-    bootstrap.Modal.getInstance(modalEdit).hide();
+    bootstrap.Modal.getInstance(el('modalEdit')).hide();
   }
 
   function clearAdd() {
-    tTitle.value = '';
-    tDesc.value = '';
+    el('tTitle').value = '';
+    el('tDesc').value = '';
   }
+
 </script>
 
 </body>
